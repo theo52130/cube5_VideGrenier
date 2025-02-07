@@ -23,10 +23,15 @@ Application web simple permettant de gérer une liste d'articles avec une interf
 
 1. Clonez le dépôt
 2. Assurez-vous que Docker est installé et en cours d'exécution
-3. Exécutez le script de démarrage :
+3. Pour le premier lancement uniquement, décommentez la ligne suivante dans `docker-compose.yml`:
+```yaml
+# - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+```
+4. Exécutez le script de démarrage :
 ```bash
 ./start-dev.sh
 ```
+5. Une fois l'application fonctionnelle, recommentez ou supprimez la ligne mentionnée à l'étape 3 pour éviter de réinitialiser la base de données aux prochains lancements.
 
 ## Accès aux services 🔗
 
