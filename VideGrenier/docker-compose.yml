@@ -1,76 +1,116 @@
 # version: '3.8'
+# Spécifie la version de la syntaxe de Docker Compose utilisée
 
 services:
-  # Service pour la base de données MySQL
+  # Définition du service pour la base de données MySQL
   db:
     image: mysql:8.0
+    # Utilise l'image MySQL version 8.0
     container_name: mysql_db
+    # Nom du conteneur
     command: --default-authentication-plugin=mysql_native_password
+    # Commande pour configurer MySQL avec le plugin d'authentification natif
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
+      # Mot de passe pour l'utilisateur root de MySQL
       MYSQL_DATABASE: mydatabase
+      # Nom de la base de données à créer
       MYSQL_USER: myuser
+      # Nom de l'utilisateur MySQL
       MYSQL_PASSWORD: mypassword
+      # Mot de passe de l'utilisateur MySQL
     volumes:
       - db_data:/var/lib/mysql
-      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      # Monte un volume pour persister les données de la base de données
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      # Monte un fichier SQL pour initialiser la base de données
     ports:
       - "3306:3306"
+      # Expose le port 3306 pour accéder à MySQL depuis l'extérieur
     networks:
       - app-network
+      # Connecte ce service au réseau nommé "app-network"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "myuser", "-pmypassword"]
+      # Vérifie la santé du conteneur MySQL en utilisant la commande mysqladmin
       interval: 5s
+      # Intervalle entre chaque vérification
       timeout: 5s
+      # Temps d'attente pour chaque vérification
       retries: 5
+      # Nombre de tentatives avant de considérer le conteneur comme non sain
     restart: unless-stopped
+    # Redémarre le conteneur sauf s'il est explicitement arrêté
 
+  # Définition du service pour PHP
   php:
     build:
       context: .
+      # Contexte de construction du Dockerfile
       dockerfile: Dockerfile.php
+      # Utilise le Dockerfile nommé Dockerfile.php
     container_name: php_fpm
+    # Nom du conteneur
     volumes:
       - ./html:/usr/share/nginx/html
+      # Monte le répertoire local "html" dans le conteneur
     depends_on:
       db:
         condition: service_healthy
+        # Attend que le service "db" soit sain avant de démarrer
     networks:
       - app-network
+      # Connecte ce service au réseau nommé "app-network"
 
-  # Service pour le serveur web Nginx
+  # Définition du service pour le serveur web Nginx
   web:
     image: nginx:latest
+    # Utilise l'image Nginx la plus récente
     container_name: nginx_web
+    # Nom du conteneur
     ports:
       - "8080:80"
+      # Expose le port 80 du conteneur sur le port 8080 de l'hôte
     volumes:
       - ./html:/usr/share/nginx/html
+      # Monte le répertoire local "html" dans le conteneur
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # Monte le fichier de configuration Nginx en lecture seule
     depends_on:
       - php
       - db
+      # Attend que les services "php" et "db" soient démarrés avant de démarrer
     networks:
       - app-network
+      # Connecte ce service au réseau nommé "app-network"
 
-  # Service pour phpMyAdmin
+  # Définition du service pour phpMyAdmin
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
+    # Utilise l'image phpMyAdmin
     container_name: phpmyadmin
+    # Nom du conteneur
     environment:
       - PMA_ARBITRARY=1
+      # Permet de se connecter à n'importe quel serveur MySQL
       - PMA_HOST=mysql_db
+      # Définit le serveur MySQL par défaut
     ports:
       - "8081:80"
+      # Expose le port 80 du conteneur sur le port 8081 de l'hôte
     depends_on:
       - db
+      # Attend que le service "db" soit démarré avant de démarrer
     networks:
       - app-network
+      # Connecte ce service au réseau nommé "app-network"
 
-# Volumes pour persister les données de la base de données
+# Définition des volumes pour persister les données de la base de données
 volumes:
   db_data:
+  # Volume nommé "db_data" pour stocker les données MySQL
 
-# Réseau pour permettre la communication entre les conteneurs
+# Définition du réseau pour permettre la communication entre les conteneurs
 networks:
   app-network:
+  # Réseau nommé "app-network"
